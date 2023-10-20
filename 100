@@ -1,0 +1,123 @@
+import tkinter as tk
+from tkinter import ttk
+import sqlite3
+
+# Создание подключения к базе данных
+conn = sqlite3.connect('employees.db')
+cursor = conn.cursor()
+
+# Создание таблицы сотрудников
+cursor.execute('''CREATE TABLE IF NOT EXISTS employees
+                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                   name TEXT,
+                   age INTEGER,
+                   position TEXT)''')
+conn.commit()
+
+# Функция добавления сотрудника
+def add_employee():
+    name = name_entry.get()
+    age = age_entry.get()
+    position = position_entry.get()
+    
+    cursor.execute("INSERT INTO employees (name, age, position) VALUES (?, ?, ?)", (name, age, position))
+    conn.commit()
+    
+    clear_entries()
+    refresh_treeview()
+
+# Функция изменения сотрудника
+def update_employee():
+    selected_item = treeview.selection()[0]
+    name = name_entry.get()
+    age = age_entry.get()
+    position = position_entry.get()
+    
+    cursor.execute("UPDATE employees SET name=?, age=?, position=? WHERE id=?", (name, age, position, selected_item))
+    conn.commit()
+    
+    clear_entries()
+    refresh_treeview()
+
+# Функция удаления сотрудника
+def delete_employee():
+    selected_item = treeview.selection()[0]
+    
+    cursor.execute("DELETE FROM employees WHERE id=?", (selected_item,))
+    conn.commit()
+    
+    clear_entries()
+    refresh_treeview()
+
+# Функция поиска сотрудника
+def search_employee():
+    search_query = search_entry.get()
+    
+    cursor.execute("SELECT * FROM employees WHERE name LIKE ?", (f'%{search_query}%',))
+    rows = cursor.fetchall()
+    
+    treeview.delete(*treeview.get_children())
+    for row in rows:
+        treeview.insert('', 'end', values=row)
+
+# Функция очистки полей ввода
+def clear_entries():
+    name_entry.delete(0, 'end')
+    age_entry.delete(0, 'end')
+    position_entry.delete(0, 'end')
+
+# Функция обновления данных в Treeview
+def refresh_treeview():
+    cursor.execute("SELECT * FROM employees")
+    rows = cursor.fetchall()
+    
+    treeview.delete(*treeview.get_children())
+    for row in rows:
+        treeview.insert('', 'end', values=row)
+
+# Создание графического интерфейса
+root = tk.Tk()
+root.title("Employee Management System")
+
+# Создание и размещение виджетов
+name_label = ttk.Label(root, text="Name:")
+name_label.grid(row=0, column=0, padx=5, pady=5)
+name_entry = ttk.Entry(root)
+name_entry.grid(row=0, column=1, padx=5, pady=5)
+
+age_label = ttk.Label(root, text="Age:")
+age_label.grid(row=1, column=0, padx=5, pady=5)
+age_entry = ttk.Entry(root)
+age_entry.grid(row=1, column=1, padx=5, pady=5)
+
+position_label = ttk.Label(root, text="Position:")
+position_label.grid(row=2, column=0, padx=5, pady=5)
+position_entry = ttk.Entry(root)
+position_entry.grid(row=2, column=1, padx=5, pady=5)
+
+add_button = ttk.Button(root, text="Add", command=add_employee)
+add_button.grid(row=3, column=0, padx=5, pady=5)
+
+update_button = ttk.Button(root, text="Update", command=update_employee)
+update_button.grid(row=3, column=1, padx=5, pady=5)
+
+delete_button = ttk.Button(root, text="Delete", command=delete_employee)
+delete_button.grid(row=3, column=2, padx=5, pady=5)
+
+search_entry = ttk.Entry(root)
+search_entry.grid(row=4, column=0, padx=5, pady=5)
+
+search_button = ttk.Button(root, text="Search", command=search_employee)
+search_button.grid(row=4, column=1, padx=5, pady=5)
+
+treeview = ttk.Treeview(root, columns=("ID", "Name", "Age", "Position"))
+treeview.grid(row=5, column=0, columnspan=3, padx=5, pady=5)
+
+treeview.heading("ID", text="ID")
+treeview.heading("Name", text="Name")
+treeview.heading("Age", text="Age")
+treeview.heading("Position", text="Position")
+
+refresh_treeview()
+
+root.mainloop()
